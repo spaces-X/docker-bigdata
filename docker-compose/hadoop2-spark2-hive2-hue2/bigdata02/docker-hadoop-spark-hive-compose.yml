@@ -1,0 +1,236 @@
+version: '2' 
+services:
+  namenode:
+    image: bde2020/hadoop-namenode:1.1.0-hadoop2.8-java8
+    container_name: namenode
+    restart: always
+    volumes:
+      - /data/hadoop/name:/hadoop/dfs/name
+    environment:
+      - CLUSTER_NAME=test
+    env_file:
+      - ./hadoop-hive.env
+    ports:
+      - 50070:50070
+      - 9870:9870
+      - 9000:9000
+    networks:
+       default:
+    #     ipv4_address: 172.18.0.10
+  
+  datanode1:
+    image: bde2020/hadoop-datanode:1.1.0-hadoop2.8-java8
+    container_name: datanode1
+    depends_on: 
+      - namenode
+    volumes:
+      - /data/hadoop/data/datanode1:/hadoop/dfs/data
+    env_file:
+      - ./hadoop-hive.env
+    networks:
+       default:
+    #     ipv4_address: 172.18.0.11
+
+  datanode2:
+    image: bde2020/hadoop-datanode:1.1.0-hadoop2.8-java8
+    container_name: datanode2
+    depends_on: 
+      - namenode
+    volumes:
+      - /data/hadoop/data/datanode2:/hadoop/dfs/data
+    env_file:
+      - ./hadoop-hive.env
+    networks:
+       default:
+    #     ipv4_address: 172.18.0.12
+  
+  datanode3:
+    image: bde2020/hadoop-datanode:1.1.0-hadoop2.8-java8
+    container_name: datanode3
+    depends_on: 
+      - namenode
+    volumes:
+      - /data/hadoop/data/datanode3:/hadoop/dfs/data
+    env_file:
+      - ./hadoop-hive.env
+    networks:
+       default:
+    #     ipv4_address: 172.18.0.32
+  
+  resourcemanager:
+    image: bde2020/hadoop-resourcemanager:1.1.0-hadoop2.8-java8
+    container_name: resourcemanager
+    restart: always
+    depends_on:
+      - namenode
+      - datanode1
+      - datanode2
+      - datanode3
+    environment:
+      SERVICE_PRECONDITION: "namenode:9000 namenode:9870 datanode1:9864 datanode2:9864 datanode3:9864"
+    env_file:
+      - ./hadoop.env
+    networks:
+       default:
+    #     ipv4_address: 172.18.1.14
+
+  nodemanager1:
+    image: bde2020/hadoop-nodemanager:1.1.0-hadoop2.8-java8
+    container_name: nodemanager1
+    restart: always
+    depends_on:
+      - namenode
+      - resourcemanager
+      - datanode1
+    environment:
+      SERVICE_PRECONDITION: "namenode:9000 namenode:9870 datanode1:9864 resourcemanager:8088"
+    env_file:
+      - ./hadoop.env
+    networks:
+       default:
+    #     ipv4_address: 172.18.0.15
+  
+
+  nodemanager2:
+    image: bde2020/hadoop-nodemanager:1.1.0-hadoop2.8-java8
+    container_name: nodemanager2
+    restart: always
+    depends_on:
+      - namenode
+      - resourcemanager
+      - datanode2
+    environment:
+      SERVICE_PRECONDITION: "namenode:9000 namenode:9870 datanode2:9864 resourcemanager:8088"
+    env_file:
+      - ./hadoop.env
+    networks:
+       default:
+    #     ipv4_address: 172.18.0.30
+  
+  nodemanager3:
+    image: bde2020/hadoop-nodemanager:1.1.0-hadoop2.8-java8
+    container_name: nodemanager3
+    restart: always
+    depends_on:
+      - namenode
+      - resourcemanager
+      - datanode3
+    environment:
+      SERVICE_PRECONDITION: "namenode:9000 namenode:9870 datanode3:9864 resourcemanager:8088"
+    env_file:
+      - ./hadoop.env
+    networks:
+       default:
+    #     ipv4_address: 172.18.0.31
+  
+  
+  
+  hive-server:
+    image: bde2020/hive:2.1.0-postgresql-metastore
+    container_name: hive-server
+    depends_on: 
+      - hive-metastore
+    env_file:
+      - ./hadoop-hive.env
+    environment:
+      - "HIVE_CORE_CONF_javax_jdo_option_ConnectionURL=jdbc:postgresql://hive-metastore/metastore"
+    ports:
+      - "10000:10000"
+    networks:
+       default:
+    #     ipv4_address: 172.18.0.33
+  
+  hive-metastore:
+    image: bde2020/hive:2.1.0-postgresql-metastore
+    container_name: hive-metastore
+    depends_on: 
+      - hive-metastore-postgresql
+    env_file:
+      - ./hadoop-hive.env
+    command: /opt/hive/bin/hive --service metastore
+    networks:
+       default:
+    #     ipv4_address: 172.18.0.17
+  
+  hive-metastore-postgresql:
+    image: bde2020/hive-metastore-postgresql:2.1.0
+    container_name: hive-metastore-postgresql
+    depends_on: 
+      - namenode
+      - resourcemanager
+      - nodemanager1
+    networks:
+       default:
+    #     ipv4_address: 172.18.0.18
+  
+
+  spark-master:
+    image: bde2020/spark-master:2.1.0-hadoop2.8-hive-java8
+    container_name: spark-master
+    depends_on: 
+      - hive-server
+    ports:
+      - 8080:8080
+      - 7077:7077
+    env_file:
+      - ./hadoop-hive.env
+    networks:
+       default:
+    #     ipv4_address: 172.18.0.19
+
+  spark-worker1:
+    image: bde2020/spark-worker:2.1.0-hadoop2.8-hive-java8
+    depends_on:
+      - spark-master
+    environment:
+      - SPARK_MASTER=spark://spark-master:7077
+    env_file:
+      - ./hadoop-hive.env
+    networks:
+       default:
+    #     ipv4_address: 172.18.0.20
+  
+  
+  spark-worker2:
+    image: bde2020/spark-worker:2.1.0-hadoop2.8-hive-java8
+    depends_on:
+      - spark-master
+    environment:
+      - SPARK_MASTER=spark://spark-master:7077
+    env_file:
+      - ./hadoop-hive.env
+    networks:
+       default:
+    #     ipv4_address: 172.18.0.21
+  
+  spark-notebook:
+    image: bde2020/spark-notebook:2.1.0-hadoop2.8-hive
+    container_name: spark-notebook
+    depends_on: 
+      - spark-master
+    env_file:
+      - ./hadoop-hive.env
+    ports:
+      - 9001:9001
+    networks:
+       default:
+    #     ipv4_address: 172.18.0.22
+
+  hue:
+    image: bde2020/hdfs-filebrowser:3.11
+    container_name: hue
+    ports:
+      - 8088:8088
+    depends_on: 
+      - namenode
+      - spark-master
+    environment:
+      - NAMENODE_HOST=namenode
+    networks:
+       default:
+    #     ipv4_address: 172.18.0.23
+
+networks:
+  default:
+    external:
+      name: hadoop_spark_net

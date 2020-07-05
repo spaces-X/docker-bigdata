@@ -1,0 +1,155 @@
+
+
+
+
+version: "3"
+
+services:
+  namenode:
+    image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
+    container_name: namenode
+    restart: always
+    ports:
+      - 50070:50070
+      - 9870:9870
+      - 9000:9000
+    volumes:
+      - /data/hadoop/name:/hadoop/dfs/name
+    environment:
+      - CLUSTER_NAME=test
+    env_file:
+      - ./hadoop.env
+    networks:
+       default:
+        ipv4_address: 172.18.0.10
+
+  datanode1:
+    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+    container_name: datanode1
+    restart: always
+    depends_on:
+      - namenode
+    volumes:
+      - /data/hadoop/data1:/hadoop/dfs/data
+    environment:
+      SERVICE_PRECONDITION: "namenode:9870"
+    env_file:
+      - ./hadoop.env
+    networks:
+       default:
+        ipv4_address: 172.18.0.11
+  
+  datanode2:
+    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+    container_name: datanode2
+    restart: always
+    depends_on:
+      - namenode
+    volumes:
+      - /data/hadoop/data2:/hadoop/dfs/data
+    environment:
+      SERVICE_PRECONDITION: "namenode:9870"
+    env_file:
+      - ./hadoop.env
+    networks:
+       default:
+        ipv4_address: 172.18.0.12
+
+  datanode3:
+    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+    container_name: datanode3
+    restart: always
+    depends_on:
+      - namenode
+    volumes:
+      - /data/hadoop/data3:/hadoop/dfs/data
+    environment:
+      SERVICE_PRECONDITION: "namenode:9870"
+    env_file:
+      - ./hadoop.env
+    networks:
+       default:
+        ipv4_address: 172.18.0.13
+
+  resourcemanager:
+    image: bde2020/hadoop-resourcemanager:2.0.0-hadoop3.2.1-java8
+    container_name: resourcemanager
+    restart: always
+    depends_on:
+      - namenode
+      - datanode1
+      - datanode2
+      - datanode3
+    environment:
+      SERVICE_PRECONDITION: "namenode:9000 namenode:9870"
+    env_file:
+      - ./hadoop.env
+    networks:
+       default:
+        ipv4_address: 172.18.0.14
+
+  nodemanager:
+    image: bde2020/hadoop-nodemanager:2.0.0-hadoop3.2.1-java8
+    container_name: nodemanager
+    restart: always
+    depends_on:
+      - namenode
+      - datanode1
+      - datanode2
+      - datanode3
+    environment:
+      SERVICE_PRECONDITION: "namenode:9000 namenode:9870 datanode1:9864 resourcemanager:8088"
+    env_file:
+      - ./hadoop.env
+    networks:
+       default:
+        ipv4_address: 172.18.0.15
+  
+  historyserver:
+    image: bde2020/hadoop-historyserver:2.0.0-hadoop3.2.1-java8
+    container_name: historyserver
+    restart: always
+    depends_on:
+      - namenode
+      - datanode1
+      - datanode2
+      - datanode3
+    environment:
+      SERVICE_PRECONDITION: "namenode:9000 namenode:9870 datanode:9864 resourcemanager:8088"
+    volumes:
+      - /data/hadoop/yarn/timeline:/hadoop/yarn/timeline
+    env_file:
+      - ./hadoop.env
+    networks:
+       default:
+        ipv4_address: 172.18.0.16
+   
+
+# volumes:
+#     hadoop_namenode: 
+#         external:
+#             name: /data/hadoop/name
+#     hadoop_datanode1: 
+#         external:
+#             name: /data/hadoop/data1
+#     hadoop_datanode2: 
+#         external:
+#             name: /data/hadoop/data2
+#     hadoop_datanode3: 
+#         external:
+#             name: /data/hadoop/data3
+#     hadoop_historyserver: 
+#         external:
+#             name: /data/hadoop/yarn/timeline
+
+# volumes:
+#   hadoop_namenode: /data/hadoop/name
+#   hadoop_datanode1: /data/hadoop/data1
+#   hadoop_datanode2: /data/hadoop/data2
+#   hadoop_datanode3: /data/hadoop/data3
+#   hadoop_historyserver: /data/hadoop/yarn/timeline
+
+networks:
+  default:
+    external:
+      name: hadoop_spark_net

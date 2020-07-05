@@ -1,0 +1,93 @@
+version: '2' 
+services:
+
+  datanode4:
+    image: bde2020/hadoop-datanode:1.1.0-hadoop2.8-java8
+    container_name: datanode4
+    
+    volumes:
+      - /data/hadoop/data/datanode4:/hadoop/dfs/data
+    env_file:
+      - ./hadoop-hive.env
+    networks:
+       default:
+        # ipv4_address: 172.18.0.24
+
+  datanode5:
+    image: bde2020/hadoop-datanode:1.1.0-hadoop2.8-java8
+    container_name: datanode5
+ 
+    volumes:
+      - /data/hadoop/data/datanode5:/hadoop/dfs/data
+    env_file:
+      - /data/hadoop-hive.env
+    networks:
+       default:
+        # ipv4_address: 172.18.0.25
+
+  nodemanager4:
+    image: bde2020/hadoop-nodemanager:1.1.0-hadoop2.8-java8
+    container_name: nodemanager4
+    restart: always
+    depends_on:
+      - datanode4
+    environment:
+      SERVICE_PRECONDITION: "namenode:9000 namenode:9870 datanode4:9864 resourcemanager:8088"
+    env_file:
+      - ./hadoop.env
+    networks:
+       default:
+        # ipv4_address: 172.18.0.26
+  
+  nodemanager5:
+    image: bde2020/hadoop-nodemanager:1.1.0-hadoop2.8-java8
+    container_name: nodemanager5
+    restart: always
+    depends_on:
+      - datanode5
+    environment:
+      SERVICE_PRECONDITION: "namenode:9000 namenode:9870 datanode5:9864 resourcemanager:8088"
+    env_file:
+      - ./hadoop.env
+    networks:
+       default:
+        # ipv4_address: 172.18.0.27
+
+  spark-worker3:
+    image: bde2020/spark-worker:2.1.0-hadoop2.8-hive-java8
+    container_name: spark-worker3
+    environment:
+      - SPARK_MASTER=spark://spark-master:7077
+    env_file:
+      - ./hadoop-hive.env
+    networks:
+       default:
+        # ipv4_address: 172.18.0.28
+  
+  
+  spark-worker4:
+    image: bde2020/spark-worker:2.1.0-hadoop2.8-hive-java8
+    container_name: spark-worker4
+    environment:
+      - SPARK_MASTER=spark://spark-master:7077
+    env_file:
+      - ./hadoop-hive.env
+    networks:
+       default:
+        # ipv4_address: 172.18.0.29
+  
+  spark-worker5:
+    image: bde2020/spark-worker:2.1.0-hadoop2.8-hive-java8
+    container_name: spark-worker5
+    environment:
+      - SPARK_MASTER=spark://spark-master:7077
+    env_file:
+      - ./hadoop-hive.env
+    networks:
+       default:
+        # ipv4_address: 172.18.0.29
+
+networks:
+  default:
+    external:
+      name: hadoop_spark_net

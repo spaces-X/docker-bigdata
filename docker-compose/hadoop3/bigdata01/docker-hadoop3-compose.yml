@@ -1,0 +1,37 @@
+version: "3"
+
+services:
+  datanode4:
+    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+    container_name: datanode4
+    restart: always
+    volumes:
+      - /data/hadoop/data4:/hadoop/dfs/data
+    environment:
+      SERVICE_PRECONDITION: "namenode:9870"
+    env_file:
+      - ./hadoop.env
+    networks:
+       default:
+        ipv4_address: 172.18.0.17
+  
+  datanode5:
+    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+    container_name: datanode5
+    restart: always
+    volumes:
+      - /data/hadoop/data5:/hadoop/dfs/data
+    environment:
+      SERVICE_PRECONDITION: "namenode:9870"
+    env_file:
+      - ./hadoop.env
+    networks:
+       default:
+        ipv4_address: 172.18.0.18
+
+
+
+networks:
+  default:
+    external:
+      name: hadoop_spark_net
